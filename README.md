@@ -1,2 +1,1 @@
-# penguins-regression
- Data Analysis of Penguins
+Predicting Body Mass (g) in Palmer Penguins Dataset

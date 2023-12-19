@@ -1,0 +1,292 @@
+---
+title: "Penguins Project"
+author: "Jackson Small"
+date: "2023-11-28"
+output:
+  word_document: default
+  pdf_document: default
+---
+
+Removing Environment Variables (optional)
+```{r}
+rm(list=ls())
+```
+
+
+```{r setup, include=FALSE} 
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+Needed Libraies 
+```{r}
+library(ggplot2)
+library(GGally)
+library(car)
+
+```
+
+```{r}
+penguins <- read.csv(file="project2/penguins.csv", header = TRUE)
+
+head(penguins,10)
+
+```
+
+
+Frequency Exploration
+
+```{r}
+
+summary(penguins)
+```
+
+```{r}
+summary(penguins$bill_length_mm) # summary chart for bill length
+summary(penguins$bill_depth_mm) # summary chart for bill depth
+summary(penguins$flipper_length_mm) # summary chart for flipper length
+summary(penguins$body_mass_g) # summary chart for body mass (g)
+
+```
+
+
+General Graphs
+```{r}
+library(ggplot2)
+
+body_mass_plot <- ggplot(data = penguins) + # distribution of the response variable
+  aes(x = (body_mass_g)) +
+  geom_histogram(color = "red", binwidth = 50) +
+  xlab("Body Mass (g)")
+body_mass_plot
+
+bill_length_plot <- ggplot(data = penguins) + # distribution of bill length variable
+  aes(x = bill_length_mm) +
+  geom_histogram(color = "blue", binwidth = 0.5) +
+  xlab("Bill Length (mm)")
+bill_length_plot
+
+bill_depth_plot <- ggplot(data = penguins) + # distribution of bill depth 
+  aes(x = bill_depth_mm) +
+  geom_histogram(color = "yellow", binwidth = 0.5) +
+  xlab("Bill depth (mm)")
+bill_depth_plot
+
+flipper_length_plot <- ggplot(data = penguins) + # distribution of flipper length
+  aes(x = flipper_length_mm) +
+  geom_histogram(color = "purple", binwidth = 0.5) +
+  xlab("Flipper Length (mm)")
+flipper_length_plot
+
+
+
+
+
+```
+
+Scatter Plots
+
+```{r}
+ggplot(penguins, aes(x = bill_length_mm, y = body_mass_g, color = species)) +
+  geom_point() +
+  labs(title = "Bill Length vs. Body Mass",
+       x = "Bill Length (mm)",
+       y = "Body Mass (g)") +
+  theme_linedraw()
+
+ggplot(penguins, aes(x = bill_depth_mm, y = body_mass_g, color = species)) +
+  geom_point() +
+  labs(title = "Bill Depth vs. Body Mass",
+       x = "Bill Depth (mm)",
+       y = "Body Mass (g)") +
+  theme_linedraw()
+
+ggplot(penguins, aes(x = flipper_length_mm, y = body_mass_g, color = species)) +
+  geom_point() +
+  labs(title = "Flipper Length vs. Body Mass",
+       x = "Bill Depth (mm)",
+       y = "Body Mass (g)") +
+  theme_linedraw()
+```
+
+Pair Plot
+```{r}
+library(GGally) 
+ggcorr(penguins, method = c("pairwise"))
+ggpairs(data = penguins,
+        columns = c("bill_length_mm", "bill_depth_mm", "flipper_length_mm", "body_mass_g"),
+        mapping = aes(colour = species)) +
+  theme_minimal()  
+```
+
+
+Exploring General Assumptions
+
+```{r}
+lm_full <- lm(body_mass_g ~ bill_length_mm + bill_depth_mm + flipper_length_mm,
+               data = penguins)
+
+plot(lm_full)
+```
+
+The Five Statistical Assumptions
+Existence - For every x value there is a y value which creates a finite mean and variance
+Independence - met 
+Linearity - met
+Homoscedasticity - met
+Normality - met with histograms
+
+Collinearity Evaluation 
+```{r}
+vif(lm_full) 
+# all values are < 10 therefore there are no collinearity risks
+```
+
+
+Data Preparation: 
+```{r}
+colSums(is.na(penguins))
+
+```
+
+```{r}
+# From the plot(lm_full) we can see that observation 294 has high leverage so lets remove it and all NA's
+
+penguins_no294 <- penguins[-294, ]
+
+penguins_clean <- na.omit(penguins_no294)
+head(penguins_clean, 10)
+
+lm_full_clean <- lm(body_mass_g ~ bill_length_mm + bill_depth_mm + flipper_length_mm,
+               data = penguins_clean)
+
+plot(lm_full_clean)
+
+summary(lm_full_clean)
+summary(penguins_clean)
+
+
+# to fix the bend in the residuals vs fitted graph. As we can see the difference is shown
+
+```
+
+
+
+
+
+
+Univariate Models!
+```{r}
+lm_bill_length <- lm(body_mass_g ~ bill_length_mm, data = penguins_clean)
+summary(lm_bill_length)
+```
+
+```{r}
+lm_bill_depth <- lm(body_mass_g ~ bill_depth_mm, data = penguins_clean)
+summary(lm_bill_depth)
+```
+
+```{r}
+lm_flipper_length <- lm(body_mass_g ~ flipper_length_mm, data = penguins_clean)
+summary(lm_flipper_length)
+```
+
+
+Full Models!
+```{r}
+lm_full_clean <- lm(body_mass_g ~ bill_length_mm + bill_depth_mm + flipper_length_mm, data = penguins_clean)
+
+summary(penguins_clean)
+summary(lm_full_clean)
+anova(lm_full_clean)
+
+```
+
+interaction testing
+```{r}
+lm_interaction <- lm(body_mass_g ~ bill_length_mm + bill_depth_mm + flipper_length_mm + (bill_length_mm * bill_depth_mm), data = penguins_clean)
+summary(lm_interaction)
+
+BWDfit.p <- ols_step_backward_p(lm_interaction, prem = 0.05)
+BWDfit.p
+
+BWDfit.p <- ols_step_backward_p(lm_interaction, prem = 0.05, details = TRUE)
+
+```
+
+
+
+From looking at the Univariate models it shows that Bill length, Bill depth, and flipper length are all linear. When we create the model (y) = b0 + b1(bill_length) +b2(bill_depth) + b3(flipper_length).
+
+stepwise elimination:
+
+```{r}
+list_lm <- list()
+list_lm[["0"]] <- lm_full_step <- lm(
+  formula = body_mass_g~ 1,
+  data = penguins_clean
+)
+list_lm[["1"]] <- lm_full_step <- lm(
+  formula = body_mass_g~ bill_length_mm,
+  data = penguins_clean
+)
+list_lm[["2"]] <- lm_full_step <- lm(
+  formula = body_mass_g~ bill_length_mm + bill_depth_mm,
+  data = penguins_clean
+)
+
+list_lm[["3"]] <- lm_full_step <- lm(
+  formula = body_mass_g~ bill_length_mm + bill_depth_mm + flipper_length_mm,
+  data = penguins_clean
+)
+
+
+
+lapply(
+  X = list_lm,
+  FUN = summary
+)
+
+
+sapply(
+  X = list_lm,
+  FUN = extractAIC,
+  k = 2
+)
+```
+
+
+
+backwards elimination: 
+
+
+```{r}
+library(olsrr)
+BWDfit.p <- ols_step_backward_p(lm_full_clean, prem = 0.05)
+BWDfit.p
+
+BWDfit.p <- ols_step_backward_p(lm_full_clean, prem = 0.05, details = TRUE)
+
+```
+Overall we can conclude that the best model and final model is 
+
+```{r}
+lm_final <- lm(body_mass_g ~ flipper_length_mm, data = penguins_clean)
+summary(lm_final)
+anova(lm_final)
+```
+
+
+Boxplots by Species 
+```{r}
+
+boxplot(body_mass_g ~ species,
+        data = penguins_clean, 
+        main="Body Mass (g) by Species",
+        xlab="Species", 
+        ylab="Body Mass (g)",
+        col = c('red', 'gold', 'orange'))
+
+```
+
+
